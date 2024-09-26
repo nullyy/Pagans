@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Localization;
+using System;
 
 public class Inventory : MonoBehaviour
 {
@@ -37,6 +39,9 @@ public class Inventory : MonoBehaviour
 
     public InventorySlot extraSlot; // for consumables
 
+    [SerializeField] CalendarBook calendarBook;
+    [SerializeField] List<Breed> knownBreeds;
+
     private void Awake()
     {
         //                                            0           1
@@ -45,6 +50,7 @@ public class Inventory : MonoBehaviour
         Equipment = new List<List<InventorySlot>>() {Weapons, Tools, Shields, Rings };
         updateEquipsList(); // dovrebbe essere una lista di puntatori..
         // wp, tool, shield, ring, secondary
+        Books.Add(calendarBook);
     }
 
     public static List<string> Categories = new List<string>
@@ -146,7 +152,6 @@ public class Inventory : MonoBehaviour
                 res[1].Add(new InventorySlot(book));
         }
 
-        print(res.Count);
         return res;
     }
 
@@ -230,64 +235,155 @@ public class Inventory : MonoBehaviour
         Books.Remove(skillbook);
     }
 
+    public void Unequip(int itype)
+    {
+        if(itype == 0)
+        {
+            Weapons[equipedWeapon].item.onUnequip();
+            equipedWeapon = -1;
+        }
+        else if(itype == 1)
+        {
+            Tools[equipedTool].item.onUnequip();
+            equipedTool = -1;
+        }
+        else if(itype == 2)
+        {
+            Shields[equipedShield].item.onUnequip();
+            equipedShield = -1;
+
+        }
+        else if(itype == 3)
+        {
+            Rings[equipedRing].item.onUnequip();
+            equipedRing = -1;
+
+        }
+        else if(itype == 4)
+        {
+            Weapons[secondaryWeapon].item.onUnequip();
+            equipedWeapon = -1;
+        }
+    }
+
     public void Equip(int itype, int val) // questo deve fare riferimento alla UI
     {
-        if (itype == 4)
-            print("lesgoo");
-
         if (itype == 0)
+        {
+            if (equipedWeapon == val)
+            {
+                Unequip(itype);
+                return;
+            }
+
+            if(equipedWeapon != -1)
+                Weapons[equipedWeapon].item.onUnequip(); // disequipaggia l'oggetto equipaggiato prima dell'attuale.
+            
             equipedWeapon = val;
+            Weapons[val].item.onEquip();
+        }
         else if (itype == 1)
+        {
+            if(equipedTool == val)
+            {
+                Unequip(itype);
+                return;
+            }
+
+            else if (equipedTool != -1)
+                Tools[equipedTool].item.onUnequip();
+
             equipedTool = val;
+            Tools[val].item.onEquip();
+        }
         else if (itype == 2)
+        {
+            if (equipedShield == val)
+            {
+                Unequip(itype);
+                return;
+            }
+
+            if (equipedShield != -1)
+                Shields[equipedShield].item.onUnequip();
+
             equipedShield = val;
+            Shields[val].item.onEquip();
+        }
         else if (itype == 3)
+        {
+            if (equipedRing == val)
+            {
+                Unequip(itype);
+                return;
+            }
+
+            if (equipedRing != -1)
+                Rings[equipedRing].item.onUnequip();
+
             equipedRing = val;
+            Rings[val].item.onEquip();
+        }
         else if (itype == 4)
+        {
+            if (secondaryWeapon == val)
+            {
+                Unequip(itype);
+                return;
+            }
+
+            if (secondaryWeapon != -1)
+            {
+                Weapons[secondaryWeapon].item.onUnequip();
+            }
             secondaryWeapon = val;
+            Weapons[val].item.onEquip();
+        }
         else
             return;
-        
 
         updateEquipsList();
     }
 
-    public void Add(ItemBase item)
+    public void Add(ItemBase item, int quantity = 1)
     {
-        print($"gettin:{item.category}");
-        if(!item.discovered && !GameController.Instance.newItemUI.isActiveAndEnabled) // altrimenti se prende due oggetti fa un casino della madonna
+        if (item == null)
+            return;
+
+        if(TryGetComponent(out Player _) && !item.discovered && !GameController.Instance.newItemUI.isActiveAndEnabled) // altrimenti se prende due oggetti fa un casino della madonna
         {
+            StartCoroutine(Player.i.DiscoveredNewItem());
             GameController.Instance.newItemUI.Open(item);
             item.discovered = true;
         }
         if (alreadyInStock(item))
-            findItem(item).count += 1;
+            findItem(item).count += quantity;
         else
         {
             if(item.category == 0 || item.category == 1) // item or consumable
-                GetSlots(item.category).Add(new InventorySlot(item));
+                GetSlots(item.category).Add(new InventorySlot(item, quantity));
 
             else if(item.category < 0) // is an equipment item
             {
                 if(item.category == -1) // weapon
                 {
-                    Weapons.Add(new InventorySlot(item));
+                    Weapons.Add(new InventorySlot(item, quantity));
                 }
                 if (item.category == -2) // tool or consumableTool
                 {
-                    Tools.Add(new InventorySlot(item));
+                    Tools.Add(new InventorySlot(item, quantity));
                 }
                 if (item.category == -3) // shield
                 {
-                    Shields.Add(new InventorySlot(item));
+                    Shields.Add(new InventorySlot(item, quantity));
                 }
                 if (item.category == -4) // ring
                 {
-                    Rings.Add(new InventorySlot(item));
+                    Rings.Add(new InventorySlot(item, quantity));
                 }
             }
 
-            else
+            else // actually ignore quantity
             {
                 if (item.category == 2) // 2 are runes
                 {
@@ -307,29 +403,36 @@ public class Inventory : MonoBehaviour
 
             }
         }
-        NotificationsUI.i.AddNotification($"took {item.Name}");
+        if(TryGetComponent<Player>(out Player _))
+            NotificationsUI.i.AddNotification($"took {item.Name}");
         updateEquipsList();
     }
 
-    public void Remove(ItemBase item)
+    public void Remove(ItemBase item, int quantity = 1)
     {
         if (alreadyInStock(item))
         {
             var fitem = findItem(item); // per non chiamare troppo spesso questa funzione che potrebbe diventare troppo pesante.
             if (fitem.count > 1)
-                fitem.count -= 1;
+                fitem.count -= quantity;
             else
             {
                 GetSlots(item.category).Remove(fitem);
 
-                if (item == extraSlot.item)
+                if(item is Seeds)
+                {
+                    ((Seeds)item).onUnequip();
+                }
+
+                if (extraSlot != null && item == extraSlot.item)
                     extraSlot = null;
             }
             ExtraItemUI.i.HandleUpdate();
         }
         else
         {
-            print("bruh tf"); // questo succede quando si lascia attivo un riferimento ad un oggetto dopo la rimozione
+            // questo succede quando si lascia attivo un riferimento ad un oggetto dopo la rimozione
+            throw new System.Exception("il codice sta tentando di rimuovere un oggetto non presente. controlla i riferimenti.");
         }
 
         updateEquipsList();
@@ -356,7 +459,7 @@ public class Inventory : MonoBehaviour
     {
         foreach(var obj in GetSlots(item.category))
         {
-            if (obj.item == item)
+            if (obj.item.Name == item.Name)
                 return obj;
         }
         return null;
@@ -418,5 +521,18 @@ public class RuneContainer
                 res.Add(r);
         
         return res;
+    }
+}
+
+[System.Serializable]
+public class Breed
+{
+    public string Name;
+    public string Description;
+
+    public Breed(string name, string description)
+    {
+        Name = name;
+        Description = description;
     }
 }

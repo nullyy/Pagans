@@ -1,43 +1,41 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.InputSystem;
 using System;
 
-public class MenuController : MonoBehaviour
+public class MenuController : MonoBehaviour, UIController
 {
     int selected = 0;
 
-    private void Awake()
+    private void OnEnable()
     {
         selected = 0;
         UpdateSelection();
+
+        Player.i.playerInput.SwitchCurrentActionMap("UI");
+        Player.i.playerInput.actions["Submit"].performed += onSubmit;
+        Player.i.playerInput.actions["Navigate"].performed += onNavigate;
+        Player.i.playerInput.actions["Cancel"].performed += onCancel;
     }
 
-    public void HandleUpdate(Action onBack)
+    private void OnDisable()
     {
-        int prev = selected;
-        if (Input.GetKeyDown(KeyCode.X))
-            onBack?.Invoke();
-
-        if (Input.GetKeyDown(KeyCode.DownArrow))
-            ++selected;
-        else if (Input.GetKeyDown(KeyCode.UpArrow))
-            --selected;
-        selected = Mathf.Clamp(selected, 0, transform.childCount-1);
-
-        if (prev != selected)
-            UpdateSelection();
-
-        if (Input.GetKeyDown(KeyCode.Z))
-            Perform(selected);
+        Player.i.playerInput.actions["Submit"].performed -= onSubmit;
+        Player.i.playerInput.actions["Navigate"].performed -= onNavigate;
+        Player.i.playerInput.actions["Cancel"].performed -= onCancel;
     }
 
     void UpdateSelection()
     {
-        foreach(Transform child in transform)
-            child.GetComponent<UnityEngine.UI.Text>().color = GameController.Instance.unselectedDefaultColor;
-        
-        transform.GetChild(selected).GetComponent<UnityEngine.UI.Text>().color = GameController.Instance.selectedDefaultColor;
+        for(int i=0; i<4; i++)
+        {
+            if(i==selected)
+                transform.GetChild(i).GetComponent<UnityEngine.UI.Text>().color = GameController.Instance.selectedDefaultColor;
+            else
+                transform.GetChild(i).GetComponent<UnityEngine.UI.Text>().color = GameController.Instance.unselectedDefaultColor;
+        }
     }
 
     void Perform(int choosen)
@@ -61,5 +59,31 @@ public class MenuController : MonoBehaviour
 
         else if (choosen == 3) // Exit
             Application.Quit();
+    }
+
+    public void onSubmit(InputAction.CallbackContext ctx)
+    {
+        Perform(selected);
+    }
+
+    public void onCancel(InputAction.CallbackContext ctx)
+    {
+        gameObject.SetActive(false);
+        GameController.Instance.state = GameController.Instance.prevState;
+        Player.i.playerInput.SwitchCurrentActionMap("Player");
+    }
+
+    public void onNavigate(InputAction.CallbackContext ctx)
+    {
+        var input = ctx.ReadValue<Vector2>();
+
+        if (input.y < 0)
+            selected++;
+        else if (input.y > 0)
+            selected--;
+
+        selected = Mathf.Clamp(selected, 0, 3);
+
+        UpdateSelection();
     }
 }

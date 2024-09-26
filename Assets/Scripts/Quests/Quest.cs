@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using UnityEngine.Localization;
 using MyBox;
 
 [System.Serializable]
@@ -9,8 +9,10 @@ public class Quest
     public bool isActive;
     public bool activeOnGet = false;
 
-    public string title;
-    public string description;
+    public bool initialized = false; // used in player.updateQuestUI
+
+    public LocalizedString title;
+    public LocalizedString description;
 
     public int experienceReward;
     public int goldReward;
@@ -22,13 +24,18 @@ public class Quest
 
     public Dialogue onEndDialogue;
 
+    public System.Action onComplete = default;
+
     public void Complete()
     {
+        Player.i.confettis.Play();
+
         GameController.Instance.player.experience += experienceReward;
         GameController.Instance.player.gold += goldReward;
         GameController.Instance.player.quest = null;
-        GameController.Instance.player.UpdateQuestUI();
         GameController.Instance.player.QuestsContainer.OnComplete(this);
+
+        Player.i.UpdateQuestUI();
 
         isActive = false;
 
@@ -44,6 +51,9 @@ public class Quest
             {
                 GameController.Instance.state = actualState;
             });
+            if (title.GetLocalizedString() == "Tutorial")
+                GameController.Instance.isFirstLaunch = false;
+            Player.i.Save();
         }
     }
 }

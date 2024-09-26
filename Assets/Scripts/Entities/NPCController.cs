@@ -1,8 +1,9 @@
 ﻿using MyBox;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
+using System;
 using UnityEngine;
+using UnityEngine.AI;
 
 public enum NPCType
 {
@@ -14,6 +15,7 @@ public enum NPCType
     Librarian
 }
 
+[RequireComponent(typeof(Animator))]
 public class NPCController : MonoBehaviour, IEntity
 {
     public string Name;
@@ -47,10 +49,20 @@ public class NPCController : MonoBehaviour, IEntity
 
     [HideInInspector] public List<string[]> dialoguesQueue = new List<string[]>();
 
-    // IA variables
-    bool isDistanceCheck = false;
-    float timeLeft = 0.3f;
-    bool isAttacking = false;
+    [SerializeField] bool WalkingCharacter = false;
+    [ConditionalField(nameof(WalkingCharacter))] [SerializeField] List<WalkStep> steps = new List<WalkStep>();
+    int actualStep = 0;
+    bool isWalking = false;
+    public bool canMove = true;
+    public bool isTalking = false;
+    NPCController talkingWith=null;
+    public int socialityLevel = 5;
+    float speed = 2.5f;
+    float checkTimer = 0f;
+
+    public CityDetails triggeredCity;
+
+    List<NPCController> alreadyCheckedNPCs;
 
     private void Start()
     {
@@ -58,6 +70,7 @@ public class NPCController : MonoBehaviour, IEntity
         quest.giver = this;
         done = false;
         storyGizmosDone = false;
+        canMove = true;
     }
 
     private void Awake()
@@ -72,6 +85,7 @@ public class NPCController : MonoBehaviour, IEntity
 
     public void Interact(Player player)
     {
+        canMove = false;
         GameController.Instance.ActiveNPC = this;
 
         if (type == NPCType.Librarian)
@@ -81,39 +95,12 @@ public class NPCController : MonoBehaviour, IEntity
             TriggerDialogue();
     }
 
-    [System.Obsolete("contenuto in via di sviluppo.", true)]
-    public IEnumerator Move(Vector2 vec) // like (2, 4) moves first 2 steps right and then 4 steps up
-    {
-        var startPos = (Vector2)transform.position;
-        var targetPos = new Vector2(transform.position.x + vec.x, transform.position.y + vec.y); // no pathfinding to reach.
-
-        bool isMoving = false;
-
-        while(startPos - targetPos != Vector2.zero)
-        {
-            if (isMoving)
-                yield return 0;
-
-            else
-            {
-                // scegli se aggiustare X o Y
-                if((Mathf.Abs(transform.position.x)-Mathf.Abs(targetPos.x)) < (Mathf.Abs(transform.position.y) - Mathf.Abs(targetPos.y))) // se distanza fra le x maggiore distanza fra y
-                {
-                    // la distanza fra le x è minore
-
-                    //rb.velocity = moveInput * getSpeed();
-                    //rb.MovePosition(rb.position + moveInput * getSpeed() * Time.fixedDeltaTime);
-                }
-            }
-        }
-    }
-
     public void TriggerDialogue()
     {
         if (!storyGizmosDone) {
             foreach (var pdialogue in particleDialogues)
             {
-                if (pdialogue.questName == Player.i.quest.title)
+                if (pdialogue.questName == Player.i.quest.title.GetLocalizedString())
                 {
                     GameController.Instance.dialogueBox.StartDialogue(pdialogue.differentDialogue, () =>
                     {
@@ -172,9 +159,9 @@ public class NPCController : MonoBehaviour, IEntity
         }
     }
 
+    [System.Obsolete("unmaintained function, use NPCController.LookAt() instead.", true)]
     void PointToPlayer() // nessuno ha capito perchè non cambia i float dell'animator ma okk
     {
-        /*
         var n = transform.position; // you
         var p = Player.i.transform.position; // player
 
@@ -195,7 +182,7 @@ public class NPCController : MonoBehaviour, IEntity
                 animator.SetFloat("FaceY", 1f);
             else
                 animator.SetFloat("FaceY", -1f);
-        }*/
+        }
     }
 
     void unshowSignal()
@@ -219,8 +206,12 @@ public class NPCController : MonoBehaviour, IEntity
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
+
+        if (type == NPCType.Enemy)
+            return;
+
         if (GameController.Instance.state != GameState.FreeRoam)
         {
             unshowSignal();
@@ -230,42 +221,132 @@ public class NPCController : MonoBehaviour, IEntity
         if (HP <= 0)
             onDie();
 
-        if(type==NPCType.Enemy)
-        {
-            EnemyUpdate();
-        }
-
         if (Player.i.isInRange(this) && type != NPCType.Enemy && !done)
             ShowSignal();
         else
             unshowSignal();
+    }
 
-        /*if(isAttacking)
+    [System.Obsolete("algoritmo obsoleto, usa A* per spostarti.", false)]
+    IEnumerator MoveBy(WalkStep step, int tolerance = 0)
+    {
+        Vector3 target = new Vector3(transform.position.x+step.step.x, transform.position.y+step.step.y);
+        isWalking = true;
+        while (Vector3.Distance(transform.position, target) > tolerance)
         {
-            if(DistanceFromPlayer() < 3.0f)
+            if (canMove)
             {
-                if(!isDistanceCheck)
+                if (animator != null)
                 {
-                    //GameController.Instance.ShowMessage("non puoi stare qui.");
-                    isDistanceCheck = true;
-                }
-                else
-                {
-                    timeLeft -= Time.deltaTime;
+                    animator.SetFloat("speed", 1);
+                    animator.SetFloat("FaceX", (target.x - transform.position.x));
+                    animator.SetFloat("FaceY", (target.y - transform.position.y));
                 }
 
-                if(timeLeft <= 0.0f)
-                {
-                    // Attack
-                    Attack();
-                }
+                transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.fixedDeltaTime);
             }
             else
             {
-                isDistanceCheck = false;
-                timeLeft = 3.0f;
+                if (animator.GetFloat("speed") > 0)
+                    animator.SetFloat("speed", 0);
             }
-        }*/
+
+            if (Vector3.Distance(Player.i.transform.position, transform.position) < 2.8f)
+            {
+                speed = 1.5f;
+                lookAt(Player.i.transform.position);
+            }
+            else if (speed < 2) speed = 2.5f;
+
+            /*if(checkTimer >= 1f)
+            {
+                foreach (var collider in Physics2D.OverlapCircleAll(transform.position, .5f))
+                {
+                    if (collider.TryGetComponent(out NPCController npc) && npc != this && npc.WalkingCharacter && !npc.isTalking)
+                    {
+                        if (UnityEngine.Random.Range(0, socialityLevel + 1) == 2)
+                        {
+                            print($"go talk with:{npc.name}");
+                            TalkWith(npc);
+                        }
+                    }
+                }
+                checkTimer = 0f;
+            }
+            else
+            {
+                checkTimer += Time.deltaTime;
+            }*/
+
+            yield return new WaitForFixedUpdate();
+        }
+        animator.SetFloat("speed", 0);
+        yield return new WaitForSeconds(step.pause);
+
+        actualStep++; // next waypoint
+        if (actualStep >= steps.Count)
+            actualStep = 0;
+
+        isWalking = false;
+    }
+
+    public IEnumerator MoveTo(Vector3 pos, Action onEnd, int tolerance = 1)
+    {
+        canMove = false;
+        while(Vector3.Distance(transform.position, pos) > tolerance)
+        {
+            animator.SetFloat("speed", 1);
+            animator.SetFloat("FaceX", (pos.x - transform.position.x));
+            animator.SetFloat("FaceY", (pos.y - transform.position.y));
+
+            transform.position = Vector3.MoveTowards(transform.position, pos, speed * Time.deltaTime);
+
+            yield return new WaitForEndOfFrame();
+        }
+        onEnd?.Invoke();
+    }
+
+    void TalkWith(NPCController npc)
+    {
+        // set bool
+        isTalking = true;
+        npc.isTalking = true;
+        npc.canMove = false;
+        // set person
+        talkingWith = npc;
+        npc.talkingWith = this;
+
+        StartCoroutine(MoveTo(npc.transform.position, () =>
+        {
+            npc.canMove = false;
+            canMove = false;
+
+            npc.lookAt(transform.position);
+            lookAt(npc.transform.position);
+
+            StartCoroutine(stopTalkingTimer(socialityLevel));
+        }));
+    }
+
+    IEnumerator stopTalkingTimer(int time)
+    {
+        yield return new WaitForSeconds(time);
+
+        // reset other npc
+        talkingWith.canMove = true;
+        talkingWith.isTalking = false;
+        talkingWith.talkingWith = null;
+
+        // reset urself
+        isTalking = false;
+        talkingWith = null;
+        canMove = true;
+    }
+
+    void lookAt(Vector3 pos)
+    {
+        animator.SetFloat("FaceX", (pos.x - transform.position.x));
+        animator.SetFloat("FaceY", (pos.y - transform.position.y));
     }
 
     // Enemy update, called by Unity's Update if is an enemy.
@@ -314,8 +395,8 @@ public class NPCController : MonoBehaviour, IEntity
         var questWindow = GameController.Instance.questWindow;
 
         questWindow.gameObject.SetActive(true);
-        questWindow.titleText.text = quest.title;
-        questWindow.DescText.text = quest.description;
+        questWindow.titleText.text = quest.title.GetLocalizedString();
+        questWindow.DescText.text = quest.description.GetLocalizedString();
         questWindow.goldText.text = $"{quest.goldReward}";
         questWindow.questGiver = this;
         GameController.Instance.state = GameState.Quest;
@@ -335,19 +416,13 @@ public class NPCController : MonoBehaviour, IEntity
         if(canBeDamaged)
             HP -= dmg;
 
-        animator.SetTrigger("Hurt");
-        /*if(type != NPCType.Enemy)
-            animator.SetTrigger("Hurt");
-        else
-        {
-            isAttacking = true;
-        }*/
-        /*var miniNum = Instantiate(numPrefab, transform);
-        miniNum.GetComponent<UnityEngine.UI.Text>().text = dmg.ToString();*/
-
         if(type == NPCType.Enemy)
         {
-            getKnockBack();
+            //getKnockBack();
+        }
+        else
+        {
+            animator.SetTrigger("Hurt");
         }
 
         if (HP <= 0)
@@ -378,4 +453,11 @@ internal class ParticleDialogue
 {
     public string questName;
     public Dialogue differentDialogue;
+}
+
+[System.Serializable]
+internal class WalkStep
+{
+    public Vector2 step;
+    public float pause;
 }

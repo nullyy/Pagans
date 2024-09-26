@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Experimental.Rendering.Universal;
 using UnityEngine.Tilemaps;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Interactions;
 
 public class Player : MonoBehaviour
 {
@@ -14,11 +16,23 @@ public class Player : MonoBehaviour
     [SerializeField] public LayerMask farmingLayer;
     [SerializeField] GameObject bulletPrefab;
     [SerializeField] Text questUI;
+    [SerializeField] Text questUIfraction;
     [SerializeField] Image ActiveQuestBG;
     [SerializeField] public Light2D torchLight;
     [SerializeField] public Transform attackPoint;
+    [SerializeField] Transform transportPoint;
     [SerializeField] public float attackRange;
     public float plantRange;
+
+    // input sys
+    public InputActionMap UIInputMap;
+    public PlayerInput playerInput;
+
+    public List<StoryBook> Recipes;
+    public List<StoryBook> GodsBooks;
+    public List<StoryBook> ElvesBooks;
+    public List<StoryBook> MonstersBooks;
+    public List<StoryBook> StoriesBooks;
 
     float moveLimiter = 0.7f;
     Rigidbody2D rb;
@@ -26,13 +40,12 @@ public class Player : MonoBehaviour
     float attackTime = 0.7f;
     float attackCounter;
     float arrowSpeed = 15f;
-    bool toggleHotbar = false;
-    float walkingSpeedDefault = 5f;
+    public Transform Head;
 
     [HideInInspector] public int maxHp = 30;
 
     [HideInInspector] public int gold=1;
-    [HideInInspector] public int experience=9;
+    [HideInInspector] public int experience=0;
     [HideInInspector] public int hp = 10;
 
     [HideInInspector] public Quest quest = null;
@@ -42,21 +55,52 @@ public class Player : MonoBehaviour
     [HideInInspector] public QuestInventory QuestsContainer;
     [HideInInspector] public Altar activeAltar = null;
     //[HideInInspector] public Plant activePlant = null;
-    [HideInInspector] public bool canMove = true;
+
+    public bool canMove = true;
+    public bool canJump = false;
+    public bool isFishing = false;
+    public bool canAttack = true;
+    public bool canUseTool = true;
+
     [HideInInspector] public bool canShowMinimap = true;
     public Key keyToUse = null;
     [HideInInspector] public Door closeDoor = null;
     [HideInInspector] public Horse activeHorse;
 
-    [HideInInspector] public int defense; // quando attaccano il danno subito è danno-defense 
+    [HideInInspector] public int defense; // quando attaccano il danno subito è danno-defense TODO
 
     public SceneDetails currentScene;
+    public SceneDetails prevScene;
+
     public bool SnapToGridMovments = false;
     public int kents = 0;
+    public CityDetails triggeredCity=null;
 
-    float ridingSpeed = 10f;
-    float runningSpeed = 8f;
+    public Port activePort;
+    public Agrimap activeAgrimap;
+    public AgribleTile activePlant;
+
+    public Animal transportingAnimal = null;
+    public LiftableItem liftingItem = null;
+
+    public InteractableObject activeBench;
+    public Boat activeBoat = null;
+    public Boat targetBoat = null;
+
+    public Camera cam;
+
+    public bool drawSelected_Agrimap = true;
+
+    float ridingSpeed = 8.2f;
+    float runningSpeed = 5f;
+    float walkingSpeedDefault = 3f;
     float holdingShieldSpeed = 2.5f;
+
+    public bool enableDiagonalMovements = false;
+
+    public bool teleporting = false;
+
+    public ParticleSystem confettis;
 
     #region saving stuffs
     public bool isFirstLaunch = false;
@@ -65,148 +109,272 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
+        i = this;
+
         inventory = GetComponent<Inventory>();
         QuestsContainer = GetComponent<QuestInventory>();
         rb = GetComponent<Rigidbody2D>();
+
         attackCounter = attackTime;
-        UpdateQuestUI();
-        i = this;
-        experience = 9;
+
+        if (quest == null || !quest.initialized)
+            ActiveQuestBG.gameObject.SetActive(false);
+        else
+            UpdateQuestUI();
+
+        // set date
+        GameController.Instance.calendar.actualMonth = GameController.Instance.calendar.Months[0]; // primo mese
+        GameController.Instance.calendar.today = GameController.Instance.calendar.actualMonth.days[29]; // last day
+
     }
 
-    private void Start()
+    public void SetScene(SceneDetails currscene)
     {
-        // questo viene dopo l'awake
-        //AstarPath.active.Scan(); // AI things are disabled now
+        prevScene = currentScene;
+        currentScene = currscene;
+    }
+
+    public void Move(InputAction.CallbackContext context)
+    {
+        moveInput = context.ReadValue<Vector2>();
+
+        if (moveInput == Vector2.zero)
+            speed = walkingSpeedDefault;
+    }
+
+    private void FixedUpdate()
+    {
     }
 
     public void HandleUpdate()
     {
-        moveInput.x = Input.GetAxisRaw("Horizontal");
-        moveInput.y = Input.GetAxisRaw("Vertical");
+        if (!teleporting)
+            CameraMover.i.HandleUpdate();
 
-        if(moveInput != Vector2.zero)
+        if(hp <= 0)
+        {
+            StartCoroutine(Die());
+        }
+
+        #region related objects carrying
+        if (activeBoat != null)
+        {
+            activeBoat.transform.position = new Vector3(transform.position.x-1, transform.position.y, 0);
+        }
+        if (transportingAnimal != null)
+        {
+            transportingAnimal.transform.position = transportPoint.position;
+        }
+        if(liftingItem != null)
+        {
+            liftingItem.transform.position = Head.position;
+        }
+        #endregion
+
+        if (moveInput != Vector2.zero)
         {
             animator.SetFloat("FacingHorizontal", moveInput.x);
             animator.SetFloat("FacingVertical", moveInput.y);
         }
 
-        /*if(moveInput.x != 0 && moveInput.y != 0)
+        if(enableDiagonalMovements)
         {
-            moveInput.x *= moveLimiter;
-            moveInput.y *= moveLimiter;
-        }*/
-
-        if (Mathf.Abs(moveInput.x) > Mathf.Abs(moveInput.y))
-            moveInput.y = 0;
+            /*if (moveInput.x != 0 && moveInput.y != 0)
+            {
+                moveInput.x *= moveLimiter;
+                moveInput.y *= moveLimiter;
+            }*/ 
+            // with the new input system this is already done
+        }
         else
-            moveInput.x = 0;
+        {
+            if (Mathf.Abs(moveInput.x) > Mathf.Abs(moveInput.y))
+                moveInput.y = 0;
+            else
+                moveInput.x = 0;
+        }
 
-        if(canMove)
+        if(canMove || !isFishing)
         {
             animator.SetFloat("Horizontal", moveInput.x);
             animator.SetFloat("Vertical", moveInput.y);
             animator.SetFloat("Speed", moveInput.sqrMagnitude);
 
             rb.velocity = moveInput * getSpeed();
-            rb.MovePosition(rb.position + moveInput * getSpeed() * Time.fixedDeltaTime);
+            rb.MovePosition(rb.position + moveInput * speed * Time.fixedDeltaTime);
         }
 
-        attackPoint.position = new Vector3(transform.position.x+animator.GetFloat("FacingHorizontal"), transform.position.y+animator.GetFloat("FacingVertical"), transform.position.z);
+        attackPoint.position = new Vector3(transform.position.x + animator.GetFloat("FacingHorizontal"), transform.position.y+animator.GetFloat("FacingVertical"), transform.position.z);
+        transportPoint.localPosition = new Vector3(-1*animator.GetFloat("FacingHorizontal"), -1*animator.GetFloat("FacingVertical"), transform.position.z);
+    }
 
-        if (inventory.equipedShield != -1)
-            animator.SetBool("hasShield", true);
-        else
-            animator.SetBool("hasShield", false);
-
-        // HANDLE INPUTS
-
-        // BINDS: E: use, R: use weapon, Z: interact, F: use xtra, X: shield, Q: minimap, LShift: run
-
-        if(Input.GetKeyDown(KeyCode.P))
+    #region bindings
+    public void OpenMenu(InputAction.CallbackContext ctx)
+    {
+        if(ctx.performed)
         {
-            GameController.Instance.OpenState(GameState.Library);
+            GameController.Instance.OpenState(GameState.Menu);
+            playerInput.currentActionMap = playerInput.actions.FindActionMap("UI");
         }
+    }
 
-        // minimap show
-        if (Input.GetKeyDown(KeyCode.Q) && canShowMinimap && !GameController.Instance.MinimapCanvas.activeSelf)
-            GameController.Instance.MinimapCanvas.SetActive(true);
-        if (Input.GetKeyUp(KeyCode.Q))
-            GameController.Instance.MinimapCanvas.SetActive(false);
-
-        if (Input.GetKeyDown(KeyCode.Z)) // Interact
+    public void Interact(InputAction.CallbackContext ctx)
+    {
+        if(ctx.performed)
         {
-            // passes through Event Handler.
             GameController.Instance.EvH.Interact();
         }
+    }
 
-        if(Input.GetKeyDown(KeyCode.X))
+    public void RunOrWalk(InputAction.CallbackContext ctx)
+    {
+        if (ctx.performed)
+            speed = runningSpeed;
+    }
+
+    public void useWeapon(InputAction.CallbackContext ctx)
+    {
+        if (ctx.performed)
         {
-            if (activeHorse != null)
-                Dismount();
-        }
-
-        /*if (Input.GetKeyDown(KeyCode.Space) && inventory.torch != null && !currentScene.outdoor) // Toggle torch
-            inventory.torch.Use(this);*/
-
-        if (Input.GetKeyDown(KeyCode.Return)) // Menu
-            GameController.Instance.OpenState(GameState.Menu);
-
-        if (Input.GetKeyDown(KeyCode.R)) // Attack
-        {
-            if(inventory.equipedWeapon != -1)
+            if (canAttack)
             {
-                if (inventory.Weapons[inventory.equipedWeapon].item.longDamage == 0) // arma da vicino (spada)
-                    useWeapon();
-                else
-                    StartCoroutine(useBow());
+                if (inventory.equipedWeapon != -1)
+                {
+                    if (inventory.Weapons[inventory.equipedWeapon].item.longDamage == 0) // arma da vicino (spada)
+                        StartCoroutine(useWeapon());
+                    else
+                        StartCoroutine(useBow());
+                }
             }
         }
+    }
 
-        if (Input.GetKeyDown(KeyCode.E)) // Use
+    public void useTool(InputAction.CallbackContext ctx)
+    {
+        if(ctx.performed && !isFishing)
         {
-            if(GameController.Instance.keyUI.isActiveAndEnabled)
+            if (GameController.Instance.keyUI.isActiveAndEnabled)
             {
                 keyToUse.Use(this);
                 inventory.Remove(keyToUse);
                 closeDoor.Open();
-            } else
+            }
+            else
             {
                 useItem();
             }
         }
+    }
 
-        if (Input.GetKeyDown(KeyCode.X)) // Shield
-        {
-            if(inventory.equipedShield != -1)
-            {
-                defense = inventory.Shields[inventory.equipedShield].item.GetDefense();
-                useShield();
-            }
-            
-        }
-        if (Input.GetKeyUp(KeyCode.X)) // off
-        {
-            if(inventory.equipedShield != -1)
-            {
-                defense = 0;
-                animator.SetBool("holdingShield", false);
-            }
-        }
+    public void cancelAction(InputAction.CallbackContext _)
+    {
+        if (GameController.Instance.plantDetailsUI.gameObject.activeSelf)
+            GameController.Instance.plantDetailsUI.gameObject.SetActive(false);
 
-        if (Input.GetKeyDown(KeyCode.T))
+        if (activeHorse != null)
+            Dismount();
+        else if (activeBoat != null)
+            activeBoat.Dismount();
+        else if (transportingAnimal != null)
         {
-            var temp = inventory.equipedWeapon;
-            inventory.equipedWeapon = inventory.secondaryWeapon;
-            inventory.secondaryWeapon = temp;
-            GameController.Instance.hotbar.UpdateItems();
+            transportingAnimal.GetComponent<BoxCollider2D>().enabled = true;
+            transportingAnimal = null;
+            animator.SetBool("carrying", false);
         }
+    }
 
-        if(Input.GetKeyDown(KeyCode.F))
+    public void switchWeapons(InputAction.CallbackContext _)
+    {
+        var temp = inventory.equipedWeapon;
+        inventory.equipedWeapon = inventory.secondaryWeapon;
+        inventory.secondaryWeapon = temp;
+        GameController.Instance.hotbar.UpdateItems();
+    }
+
+    public void useExtraSlot(InputAction.CallbackContext ctx)
+    {
+        if(ctx.started)
         {
             if (inventory.extraSlot != null && inventory.extraSlot.item != null)
+            {
+                print($"using {inventory.extraSlot.item.name}");
                 inventory.extraSlot.item.Use(this);
+            }
+            else
+                print("extra slot is empty");
         }
+    }
+    #endregion
+
+    public void GetDamage(int dmg)
+    {
+        StartCoroutine(Camera.main.GetComponent<CameraMover>().Shake(.15f, .15f));
+        if (animator.GetBool("holdingShield"))
+        {
+            if (inventory.Shields[inventory.equipedShield].item.Defense < dmg)
+            {
+                hp -= inventory.Shields[inventory.equipedShield].item.Defense - dmg;
+            }
+        }
+        else
+            hp -= dmg;
+    }
+
+    public bool TryGetSomething<T>(out T type, Vector3 pos, float radius = 0.1f, LayerMask? layer = null)
+    {
+        if (layer == null)
+            layer = farmingLayer;
+
+        var collider = Physics2D.OverlapCircle(pos, radius, (LayerMask)layer);
+
+        type = default(T);
+
+        if (collider != null && collider.TryGetComponent(out T t))
+        {
+            type = t;
+            return true;
+        }
+        return false;
+    }
+
+    public void ShowPlantDetails()
+    {
+        GameController.Instance.plantDetailsUI.gameObject.SetActive(true);
+    }
+
+    public void Sleep(System.Action onwakeup)
+    {
+        animator.SetTrigger("sleep");
+        StartCoroutine(GameController.Instance.Sleep(onwakeup));
+    }
+
+    public IEnumerator Reach(Transform target)
+    {
+        canMove = false;
+        while (Vector3.Distance(transform.position, target.position) > 1)
+        {
+            animator.SetFloat("speed", speed);
+            animator.SetFloat("FaceX", (target.position.x - transform.position.x));
+            animator.SetFloat("FaceY", (target.position.y - transform.position.y));
+
+            transform.position = Vector3.MoveTowards(transform.position, transform.position, speed * Time.deltaTime);
+
+            yield return new WaitForEndOfFrame();
+        }
+        LookAt(target.position);
+        canMove = true;
+    }
+
+    public void LookAt(Vector3 pos)
+    {
+        animator.SetFloat("FacingHorizontal", (pos.x - transform.position.x));
+        animator.SetFloat("FacingVertical", (pos.y - transform.position.y));
+    }
+
+    public IEnumerator Die()
+    {
+        yield return new WaitForSeconds(.75f);
+        GameController.Instance.OpenState(GameState.GameOver);
     }
 
     public void Ride(Horse horse)
@@ -224,36 +392,32 @@ public class Player : MonoBehaviour
         activeHorse = null;
     }
 
-    void useWeapon()
+    IEnumerator useWeapon()
     {
+        canAttack = false;
+
         rb.velocity = Vector2.zero;
+        canMove = false;
         print(inventory.equipedWeapon);
         if (inventory.equipedWeapon != -1)
             inventory.Weapons[inventory.equipedWeapon].item.Use(this); // trova l'arma e usala
+        yield return new WaitForSeconds(.5f);
+        canMove = true;
+
+        canAttack = true;
     }
 
     IEnumerator useBow()
     {
-        /*rb.velocity = Vector2.zero;
-        if (!animator.GetBool("Attacking"))
-        {
-            // this only start animation cuz this HandleUpdate() wait for animation to complete for shooting a bullet.
-            attackCounter = attackTime;
-            animator.SetBool("Attacking", true);
-        }
-        if (animator.GetBool("Attacking")) // shoot on animation ends
-        {
-            rb.velocity = Vector2.zero;
-            attackCounter -= Time.deltaTime;
-            if (attackCounter <= 0)
-            {
-                animator.SetBool("Attacking", false);
-                Shoot();
-            }
-        }*/
+        canAttack = false;
+
         animator.SetTrigger("Shoot");
+        canMove = false;
         yield return new WaitForSeconds(0.5f);
+        canMove = true;
         Shoot();
+
+        canAttack = true;
     }
 
     void useShield()
@@ -265,32 +429,43 @@ public class Player : MonoBehaviour
 
     void useItem()
     {
-        print("equiped:" + inventory.equipedTool);
         if (inventory.equipedTool != -1)
             inventory.Tools[inventory.equipedTool].item.Use(this);
     }
 
-    public void Cut()
+    public IEnumerator DiscoveredNewItem()
     {
-        var tree = GetFrontalCollider(farmingLayer);
-
-        if(tree != null && tree.TryGetComponent(out Tree tempTree))
-        {
-            Debug.Log("cutting");
-            tempTree.Cut();
-        }
+        animator.SetTrigger("newItemEmote");
+        canMove = false;
+        yield return new WaitForSeconds(1.5f);
+        canMove = true;
     }
 
     float getSpeed()
     {
         if (animator.GetBool("isRiding"))
             return ridingSpeed;
-        else if (Input.GetKey(KeyCode.LeftShift))
-            return runningSpeed;
+        else if (animator.GetBool("isClimbing"))
+            return 2.5f;
+        //else if (Input.GetKey(KeyCode.LeftShift))
+        //    return runningSpeed;
         else if (animator.GetBool("holdingShield"))
             return holdingShieldSpeed;
         else
             return walkingSpeedDefault;
+    }
+
+    public Vector3Int GetPointedPosition_vec3int()
+    {
+        var res = new Vector3Int((int)(transform.position.x + animator.GetFloat("FacingHorizontal")), (int)((transform.position.y + animator.GetFloat("FacingVertical"))-.8f), 0);
+        //var res = new Vector3Int((int)(transform.position.x + animator.GetFloat("FacingHorizontal")/2), (int)(transform.position.y + animator.GetFloat("FacingVertical")/2 - .3f)-1, (int)transform.position.z);
+        return res;
+    }
+
+    public Vector2Int GetPointedPosition_vec2int()
+    {
+        var res = new Vector2Int((int)(transform.position.x + animator.GetFloat("FacingHorizontal") / 2), (int)(transform.position.y + animator.GetFloat("FacingVertical") / 2 - .3f) - 1);
+        return res;
     }
 
     private void OnDrawGizmosSelected()
@@ -301,6 +476,7 @@ public class Player : MonoBehaviour
     public void Save()
     {
         SaveSystem.SavePlayer(this);
+
     }
 
     public void Load()
@@ -318,11 +494,9 @@ public class Player : MonoBehaviour
         hp = data.health;
         transform.position = new Vector3(data.position[0], data.position[1], data.position[2]);
         print("[*] is first launch: " + data.firstLaunch);
-        GameController.Instance.storyController.firstLaunch = data.firstLaunch;
-        if(data.firstLaunch)
-        {
-            transform.position = new Vector3(235, 0, 0);
-        }
+        GameController.Instance.isFirstLaunch = data.firstLaunch;
+        enableDiagonalMovements = data.enableDiagonalMoves;
+        kents = data.kents;
     }
 
     public bool isInRange(IEntity entity, float radius=1.5f)
@@ -337,20 +511,33 @@ public class Player : MonoBehaviour
 
     public void UpdateQuestUI()
     {
-        if(quest!=null && quest.goal != null)
+        if(quest!=null && quest.goal != null && !quest.initialized)
         {
+            if (quest.goal[0].goal == "")
+                return;
+
             // enable quests on hud cuz instead of removing text now i'll turn off the container gameobj.
             ActiveQuestBG.gameObject.SetActive(true);
 
             // now set text
             questUI.text = quest.goal[0].goal;
 
-            if(quest.goal[0].goal == "")
-                ActiveQuestBG.gameObject.SetActive(false);
+            // if is a totType goal, enable fraction
+            if(quest.goal[0].goalType == GoalType.BuyTot || quest.goal[0].goalType == GoalType.SellTot || quest.goal[0].goalType == GoalType.GetTot || quest.goal[0].goalType == GoalType.KillTot)
+            {
+                questUI.alignment = TextAnchor.MiddleLeft;
+                questUIfraction.gameObject.SetActive(true);
+                questUIfraction.text = $"{quest.goal[0].currentAmount}/{quest.goal[0].RequiredAmount}";
+            }
+            else
+            {
+                questUIfraction.gameObject.SetActive(false);
+                questUI.alignment = TextAnchor.MiddleCenter;
+            }
+
         }
         else
         {
-            // only disable background image
             ActiveQuestBG.gameObject.SetActive(false);
         }
     }
@@ -383,7 +570,7 @@ public class Player : MonoBehaviour
         animator.SetTrigger("SwordAttack");
         animator.SetBool("Attacking", false);
 
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, interactableLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, interactableLayer | farmingLayer);
 
         foreach (Collider2D enemy in hitEnemies)
             enemy.GetComponent<IEntity>().takeDamage(inventory.Weapons[inventory.equipedWeapon].item.GetCloseDamage());
@@ -433,11 +620,6 @@ public class Player : MonoBehaviour
         bullRb.velocity = vec;
     }
 
-    public void GetLoot(ItemBase item)
-    {
-        inventory.GetSlots(item.category).Add(new InventorySlot(item));
-    }
-
     public Collider2D GetFrontalCollider(LayerMask layer)
     {
         var facingDir = new Vector3(animator.GetFloat("FacingHorizontal"), animator.GetFloat("FacingVertical"));
@@ -459,14 +641,3 @@ public class Player : MonoBehaviour
         hp -= damageAmount;
     }
 }
-
-/*namespace Pagans
-{
-    public static class PlayerThings
-    {
-        public static Player GetPlayerInstance()
-        {
-            return Player.i;
-        }
-    }
-}*/

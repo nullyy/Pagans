@@ -10,20 +10,28 @@ public class Curative : ItemBase
 
     public override void Use(Player player)
     {
-        if(animals_eat_this)
+        if(animals_eat_this && ThereIsAnimal(out IAnimal animal))
         {
-            var entity = player.GetFrontalCollider(); // animals are interactables
-            if(entity.TryGetComponent(out Animal animal))
-            {
-                animal.Eat(this);
-            }
-                
+            animal.Eat(this);
+            player.inventory.Remove(this);
         }
         else
         {
             player.hp = Mathf.Clamp(player.hp+cure, 0, player.maxHp);
+            player.inventory.Remove(this);
         }
+    }
 
-        player.inventory.Remove(this); // this calls the remove func, DONT CALL IT TWO TIMES!
+    bool ThereIsAnimal(out IAnimal animal)
+    {
+        animal = null;
+
+        var entity = Player.i.GetFrontalCollider();
+        if (entity != null && entity.TryGetComponent(out IAnimal m_animal))
+        {
+            animal = m_animal;
+            return true;
+        }
+        else return false;
     }
 }

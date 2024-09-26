@@ -10,10 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 2576448740519100735}
   - component: {fileID: 2576448740519100732}
-  - component: {fileID: 2576448740519100609}
-  - component: {fileID: 2576448740519100734}
   - component: {fileID: 2576448740519100608}
   - component: {fileID: 2576448740519100611}
+  - component: {fileID: 4282096619243360068}
   m_Layer: 11
   m_Name: NPC
   m_TagString: Untagged
@@ -29,7 +28,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2576448740519100733}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.5, y: -1.2, z: 1}
+  m_LocalPosition: {x: 2.5, y: -1.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -50,6 +49,7 @@ SpriteRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -71,9 +71,9 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 1328083513
-  m_SortingLayer: 4
-  m_SortingOrder: 0
+  m_SortingLayerID: 1170453627
+  m_SortingLayer: 6
+  m_SortingOrder: 1
   m_Sprite: {fileID: 7152930139536384079, guid: edf27e9d873895b4f86a10c98de189e5,
     type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -86,53 +86,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!50 &2576448740519100609
-Rigidbody2D:
-  serializedVersion: 4
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2576448740519100733}
-  m_BodyType: 2
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDrag: 0
-  m_AngularDrag: 0.05
-  m_GravityScale: 0
-  m_Material: {fileID: 0}
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 4
---- !u!61 &2576448740519100734
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2576448740519100733}
-  m_Enabled: 1
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_UsedByComposite: 0
-  m_Offset: {x: 0.0019501448, y: 0.005982876}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 2}
-    newSize: {x: 1, y: 2}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  serializedVersion: 2
-  m_Size: {x: 0.8857329, y: 1.2578206}
-  m_EdgeRadius: 0
 --- !u!114 &2576448740519100608
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -153,6 +106,7 @@ MonoBehaviour:
   type: 0
   quest:
     isActive: 0
+    activeOnGet: 0
     title: First quest
     description: this is the description of the quest. Let's be honest, not everyone
       is going to read this.
@@ -161,51 +115,79 @@ MonoBehaviour:
     giver: {fileID: 0}
     successReaction: 
     goal:
-    - goal: 
+    - dialogueDelay: 1
+      introDialogue:
+        Teller: 
+        sentences: []
+      goal: 
       goalType: 0
-      requiredAmount: 0
-      currentAmount: 0
       enemyName: 
       talkTo: 
       sellerName: 
-      itemName: 
+      GoalItem: {fileID: 0}
       PortalName: 
-    - goal: 
-      goalType: 0
-      requiredAmount: 0
+      itemToEquip: {fileID: 0}
+      reqAmount: 0
       currentAmount: 0
+    - dialogueDelay: 1
+      introDialogue:
+        Teller: 
+        sentences: []
+      goal: 
+      goalType: 0
       enemyName: 
       talkTo: 
       sellerName: 
-      itemName: 
+      GoalItem: {fileID: 0}
       PortalName: 
-    - goal: 
-      goalType: 0
-      requiredAmount: 0
+      itemToEquip: {fileID: 0}
+      reqAmount: 0
       currentAmount: 0
+    - dialogueDelay: 1
+      introDialogue:
+        Teller: 
+        sentences: []
+      goal: 
+      goalType: 0
       enemyName: 
       talkTo: 
       sellerName: 
-      itemName: 
+      GoalItem: {fileID: 0}
       PortalName: 
-    - goal: 
-      goalType: 0
-      requiredAmount: 0
+      itemToEquip: {fileID: 0}
+      reqAmount: 0
       currentAmount: 0
+    - dialogueDelay: 1
+      introDialogue:
+        Teller: 
+        sentences: []
+      goal: 
+      goalType: 0
       enemyName: 
       talkTo: 
       sellerName: 
-      itemName: 
+      GoalItem: {fileID: 0}
       PortalName: 
-    - goal: 
-      goalType: 0
-      requiredAmount: 0
+      itemToEquip: {fileID: 0}
+      reqAmount: 0
       currentAmount: 0
+    - dialogueDelay: 1
+      introDialogue:
+        Teller: 
+        sentences: []
+      goal: 
+      goalType: 0
       enemyName: 
       talkTo: 
       sellerName: 
-      itemName: 
+      GoalItem: {fileID: 0}
       PortalName: 
+      itemToEquip: {fileID: 0}
+      reqAmount: 0
+      currentAmount: 0
+    onEndDialogue:
+      Teller: 
+      sentences: []
   attackDamage: 0
   HP: 10
   canBeDamaged: 0
@@ -213,8 +195,15 @@ MonoBehaviour:
   repeatOperation: 0
   dialoguesAfterWork: []
   storyEntity: 0
+  particleDialogues: []
   expDrop: 0
   done: 0
+  WalkingCharacter: 0
+  steps: []
+  canMove: 1
+  isTalking: 0
+  socialityLevel: 5
+  triggeredCity: {fileID: 0}
 --- !u!95 &2576448740519100611
 Animator:
   serializedVersion: 3
@@ -234,3 +223,29 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorControllerStateOnDisable: 0
+--- !u!61 &4282096619243360068
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2576448740519100733}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: -0.003326416, y: -0.37223625}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 2}
+    newSize: {x: 1, y: 2}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 0.7458191, y: 0.5116234}
+  m_EdgeRadius: 0

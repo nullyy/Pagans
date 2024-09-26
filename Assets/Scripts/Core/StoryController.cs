@@ -5,11 +5,11 @@ using UnityEngine.SceneManagement;
 
 public class StoryController : MonoBehaviour
 {
-    public bool firstLaunch;
     public bool isRunningStory;
     public Quest activeQuest;
 
-    [SerializeField] SceneDetails TutorialScene;
+    public SceneDetails TutorialScene;
+
     [SerializeField] SceneDetails Midgardr;
     [SerializeField] SceneDetails Alfheimr;
     [SerializeField] SceneDetails Svartalfheimr;
@@ -20,16 +20,23 @@ public class StoryController : MonoBehaviour
     [SerializeField] SceneDetails Helheimr;
     [SerializeField] SceneDetails Asgardr;
 
-    private void Awake()
+    /*private void Start()
     {
-        if(firstLaunch)
+        if (GameController.Instance.isFirstLaunch)
         {
-            TutorialScene.LoadSceneAsMain();
+            SceneManager.LoadScene("Tutorial");
         }
 
         else
-            Midgardr.LoadSceneAsMain();
-    }
+        {
+            SceneManager.LoadScene("Gameplay"); // i chunk verranno caricati con il trigger
+        }
+    } // rem cuz Runner.cs will choose the scene.
+
+    public async void Activate()
+    {
+        Start();
+    }*/
 
     public void hasStartedTalking(NPCController npc)
     {

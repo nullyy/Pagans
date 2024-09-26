@@ -7,12 +7,13 @@ public class SceneDetails : MonoBehaviour
 {
     [SerializeField] List<SceneDetails> connectedScenes;
 
-    [SerializeField] UnityEngine.Experimental.Rendering.Universal.Light2D light;
+    [SerializeField] public UnityEngine.Experimental.Rendering.Universal.Light2D light;
     [SerializeField] float lightBrightness = 1f;
     [SerializeField] Color lightColor;
     public GameObject[] lights;
 
     public bool outdoor = true;
+    public Vector2 door; // se è una scena chiusa specifica l'entrata.
 
     bool IsLoaded = false;
 
@@ -22,19 +23,48 @@ public class SceneDetails : MonoBehaviour
         {
             print($"entered {gameObject.name}");
 
+            LoadSceneAsMain();
+            Player.i.SetScene(this);
+
+            // unload chunks that are no longer connected
+            if (Player.i.prevScene != null)
+            {
+                var prevLoadedScenes = Player.i.prevScene.connectedScenes;
+                foreach (var scene in prevLoadedScenes)
+                {
+                    if (!connectedScenes.Contains(scene) && scene != this)
+                    {
+                        print($"unloading {scene}");
+                        scene.UnloadScene();
+                    }
+                }
+            }
+
             light.color = lightColor;
             light.intensity = lightBrightness;
 
-            Player.i.currentScene = this;
+            /*if (gameObject.name != "Midgardr")
+                NotificationsUI.i.AddNotification("entered " + gameObject.name);*/
 
-            if (gameObject.name != "Midgardr")
-                NotificationsUI.i.AddNotification("entered " + gameObject.name);
+            if (outdoor)
+            {
+                GameController.Instance.audioSource.clip = GameController.Instance.outdoorBackgroundTrack;
+                GameController.Instance.audioSource.volume = .1f;
+            }
+            else
+                GameController.Instance.audioSource.clip = GameController.Instance.indoorBackgroundTrack;
+
+            GameController.Instance.audioSource.Play();
+
+
         }
-    }
-
-    private void OnEnable()
-    {
-        SceneManager.sceneLoaded += OnSceneLoaded;
+        else if(collision.tag == "NPC")
+        {
+            if(collision.TryGetComponent(out NoAIBehaviour ai))
+            {
+                ai.triggeredScene = this;
+            }
+        }
     }
 
     public void LoadSceneAsMain()
@@ -42,22 +72,16 @@ public class SceneDetails : MonoBehaviour
         LoadScene();
         foreach (var scene in connectedScenes)
             scene.LoadScene();
-
-        //AstarPath.active.Scan();
     }
 
     public void LoadScene()
     {
+        print($"loading {gameObject.name}");
         if(!IsLoaded)
         {
-            print(gameObject.name + " will be loaded");
-            SceneManager.LoadScene(gameObject.name, LoadSceneMode.Additive);
+            SceneManager.LoadSceneAsync(gameObject.name, LoadSceneMode.Additive);
+            IsLoaded = true;
         }
-    }
-
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        //AstarPath.active.Scan();
     }
 
     public void UnloadScene()

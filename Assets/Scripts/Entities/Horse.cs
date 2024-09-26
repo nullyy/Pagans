@@ -2,20 +2,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Horse : Animal
+[RequireComponent(typeof(BoxCollider2D))]
+public class Horse : IAnimal
 {
-    public override void nonTamedAction()
+    protected override void nonTamedInteraction()
     {
-        if(Player.i.inventory.Skills.Contains(tameskill))
-        {
-            tamed = true;
-        }
+        startRide();
+        print("no tu non mi conosci però parli di me");
     }
 
-    public override void TamedAction()
+    protected override void tamedInteraction()
     {
-        Player.i.animator.SetFloat("FacingHorizontal", GetComponent<Animator>().GetFloat("FaceX"));
-        Player.i.animator.SetFloat("FacingVertical", GetComponent<Animator>().GetFloat("FaceY"));
-        Player.i.Ride(this);
+        print("oh ciao");
+    }
+
+    void startRide()
+    {
+        GetComponent<SpriteRenderer>().sortingOrder = 0;
+        GetComponent<BoxCollider2D>().enabled = false;
+        Player.i.transform.position = transform.position;
     }
 }

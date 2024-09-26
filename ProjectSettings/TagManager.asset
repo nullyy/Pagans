@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - NPC
   layers:
   - Default
   - TransparentFX
@@ -22,7 +23,7 @@ TagManager:
   - Farming
   - Enemies
   - Minimap
-  - 
+  - AIObstacles
   - 
   - 
   - 
@@ -44,17 +45,26 @@ TagManager:
   - name: Background
     uniqueID: 3342041215
     locked: 0
+  - name: HighBG
+    uniqueID: 3694928171
+    locked: 0
+  - name: midground
+    uniqueID: 2958291321
+    locked: 0
   - name: SolidObjects
     uniqueID: 510808553
-    locked: 0
-  - name: Foreground
-    uniqueID: 3692708423
     locked: 0
   - name: Entities
     uniqueID: 1328083513
     locked: 0
   - name: Player
     uniqueID: 1170453627
+    locked: 0
+  - name: Foreground
+    uniqueID: 3692708423
+    locked: 0
+  - name: FX
+    uniqueID: 81788103
     locked: 0
   - name: UI
     uniqueID: 3925700719

@@ -3064,7 +3064,7 @@ TextureImporter:
     second: ZeldaTileset_1019
   - first:
       213: -3532442995275497743
-    second: ZeldaTileset_1020
+    second: ZeldaTileset_1020_terrain
   - first:
       213: -1200178578541756180
     second: ZeldaTileset_1021
@@ -3199,10 +3199,10 @@ TextureImporter:
     second: ZeldaTileset_1064
   - first:
       213: 6098956821194664052
-    second: ZeldaTileset_1065
+    second: ZeldaTileset_1065_potatoe_seeds
   - first:
       213: -5614626324758365740
-    second: ZeldaTileset_1066
+    second: ZeldaTileset_1066_potatoe_grown
   - first:
       213: 9124122714715258490
     second: ZeldaTileset_1067
@@ -3220,7 +3220,7 @@ TextureImporter:
     second: ZeldaTileset_1071
   - first:
       213: -2453489971708927415
-    second: ZeldaTileset_1072
+    second: ZeldaTileset_1072_plowTerrain
   - first:
       213: -7000878439287543869
     second: fontana1
@@ -3374,6 +3374,30 @@ TextureImporter:
   - first:
       213: -8693640961925271102
     second: nes-right3
+  - first:
+      213: 2837377347450748411
+    second: ZeldaTileset_1115
+  - first:
+      213: 5103595746560222456
+    second: ZeldaTileset_1116
+  - first:
+      213: -3175072559018851680
+    second: ZeldaTileset_1117
+  - first:
+      213: -8674242671828609959
+    second: ZeldaTileset_1118
+  - first:
+      213: 4006109977418532028
+    second: ZeldaTileset_1119
+  - first:
+      213: -8061560747768775382
+    second: ZeldaTileset_1120
+  - first:
+      213: 1360254769435765054
+    second: Gate1-open
+  - first:
+      213: 9021424611452207950
+    second: Gate1-close
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -3395,6 +3419,7 @@ TextureImporter:
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -3404,8 +3429,8 @@ TextureImporter:
   textureSettings:
     serializedVersion: 2
     filterMode: 0
-    aniso: -1
-    mipBias: -100
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -3426,9 +3451,12 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
   applyGammaDecoding: 0
   platformSettings:
   - serializedVersion: 3
@@ -24903,7 +24931,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ZeldaTileset_1020
+      name: ZeldaTileset_1020_terrain
       rect:
         serializedVersion: 2
         x: 32
@@ -25848,7 +25876,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ZeldaTileset_1065
+      name: ZeldaTileset_1065_potatoe_seeds
       rect:
         serializedVersion: 2
         x: 0
@@ -25869,7 +25897,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ZeldaTileset_1066
+      name: ZeldaTileset_1066_potatoe_grown
       rect:
         serializedVersion: 2
         x: 16
@@ -25995,7 +26023,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ZeldaTileset_1072
+      name: ZeldaTileset_1072_plowTerrain
       rect:
         serializedVersion: 2
         x: 16
@@ -26893,6 +26921,174 @@ TextureImporter:
       bones: []
       spriteID: 2c1b8a32b9bf95780800000000000000
       internalID: -8693640961925271102
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ZeldaTileset_1115
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 112
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bfdba881aa3606720800000000000000
+      internalID: 2837377347450748411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ZeldaTileset_1116
+      rect:
+        serializedVersion: 2
+        x: 544
+        y: 112
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8f4aaee9a4d93d640800000000000000
+      internalID: 5103595746560222456
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ZeldaTileset_1117
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 112
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0a2479f6450efe3d0800000000000000
+      internalID: -3175072559018851680
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ZeldaTileset_1118
+      rect:
+        serializedVersion: 2
+        x: 544
+        y: 96
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 954de128f36ee9780800000000000000
+      internalID: -8674242671828609959
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ZeldaTileset_1119
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 96
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cb40e279ccf889730800000000000000
+      internalID: 4006109977418532028
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ZeldaTileset_1120
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 96
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a2d720e36359f1090800000000000000
+      internalID: -8061560747768775382
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Gate1-open
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 512
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e39ef30818890e210800000000000000
+      internalID: 1360254769435765054
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Gate1-close
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 544
+        width: 16
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e434395f2e9823d70800000000000000
+      internalID: 9021424611452207950
       vertices: []
       indices: 
       edges: []
